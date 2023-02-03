@@ -29,7 +29,7 @@ async function init() {
     switch(querySelector.answer) {
         case 'View All Employees':
             q = viewAllEmployees();
-            db.query(q, (err, results) => err ? console.log(err) : console.table('Employees', results));
+            db.query(q, (err, results) => err ? console.log(err) : console.table(results));
             break;
         case 'View All Departments':
             q = viewAllDepartments();
@@ -90,7 +90,7 @@ async function init() {
         case 'Quit':
             process.exit();
     }
-    
+    setTimeout(init, 1000);
 }
 
 
