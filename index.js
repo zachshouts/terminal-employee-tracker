@@ -1,7 +1,7 @@
 const inquirer = require('inquirer');
 const mysql = require('mysql2');
 const cTable = require('console.table');
-const { updateQuery, selectQuery, insertQuery } = require('./helpers/functions.js');
+const { viewAllEmployees, viewAllDepartments, viewAllRoles, addEmployee, addRole, addDepartment, updateEmployee } = require('./helpers/functions.js');
 
 const db = mysql.createConnection(
     {
@@ -18,53 +18,58 @@ async function init() {
         {
             type: 'list',
             message: 'What would you like to do?',
-            choices: ['View All Employees', 'Add Employee', 'Update Employee Role', 'View All Roles', 'Add Role', 'View All Departments', 'Add Department'],
+            choices: ['View All Employees', 'Add Employee', 'Update Employee Role', 'View All Roles', 'Add Role', 'View All Departments', 'Add Department', 'Quit'],
             name: 'answer'
         }
     ]);
     let q;
+    let query;
+    let data;
     switch(querySelector.answer) {
         case 'View All Employees':
-            q = selectQuery('employee');
-            db.query(q, (err, results) => console.log(results));
+            q = viewAllEmployees();
+            db.query(q, (err, results) => err ? console.log(err) : console.table('Employees', results));
+            break;
+        case 'View All Departments':
+            q = viewAllDepartments();
+            db.query(q, (err, results) => err ? console.log(err) : console.table('Departments', results));
+            break;
+        case 'View All Roles':
+            q = viewAllRoles();
+            db.query(q, (err, results) => err ? console.log(err) : console.table('Roles', results));
             break;
         case 'Add Employee':
-            const data = await addEmployee();
-            q = insertQuery('employee', 'first_name, last_name, role_id, manager_id', data);
-            console.log(q);
-            db.query(q, (err, results) => err ? console.log(err) : console.log(results));
+            q = await addEmployee();
+            ({ query, data } = q);
+            db.query(query, data, (err, results) => err ? console.log(err) : console.log('Employee Added.'));
+            break;
+        case 'Add Role':
+            q = await addRole();
+            ({ query, data } = q);
+            db.query(query, data, (err, results) => err ? console.log(err) : console.log('Role Added.'));
+            break;
+        case 'Add Department':
+            q = await addDepartment();
+            ({ query, data } = q);
+            db.query(query, data, (err, results) => err ? console.log(err) : console.log('Department Added.'));
+            break;
+        case 'Update Employee Role':
+            const getEmployees = viewAllEmployees();
+            const employees = await db.promise().query(getEmployees);
+            const employeesList = employees[0].map(e => `${e.first_name} ${e.last_name}`);
+            const selection = await inquirer.prompt([
+                {
+                    type: 'list',
+                    message: 'Which employee would you like to update?',
+                    choices: employeesList,
+                    name: 'employee'
+                }
+            ]);
+            q = await updateEmployee(selection.employee);
+            ({ query, data } = q);
+            const nameArr = selection.employee.split(' ');
+            db.query(query, [data, nameArr[0], nameArr[1]], (err, results) => err ? console.log(err) : console.log('Employee Updated.'));
     }
-}
-
-async function addEmployee() {
-    const data = await inquirer.prompt([
-        {
-            type: 'input',
-            message: 'Enter the employees first name.',
-            name: 'firstName'
-        },
-        {
-            type: 'input',
-            message: 'Enter the employees last name.',
-            name: 'lastName'
-        },
-        {
-            type: 'number',
-            message: 'Enter the employees role ID.',
-            name: 'roleId'
-        },
-        {
-            type: 'number',
-            message: 'Enter the employees manager ID (0 if they have none).',
-            name: 'managerId'
-        }
-    ]);
-    const dataArr = [`'${data.firstName}'`, `'${data.lastName}'`, data.roleId, data.managerId];
-    if (dataArr[3] === 0) {
-        dataArr[3] = 'NULL';
-    }
-    console.log(dataArr);
-    return dataArr;
 }
 
 
