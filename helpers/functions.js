@@ -14,7 +14,11 @@ function viewAllRoles() {
     return `SELECT r.title, r.id, d.name AS department, r.salary FROM role AS r JOIN department AS d ON r.department_id = d.id;`
 };
 
-async function addEmployee() {
+function getManagersQuery() {
+    return `SELECT e.id, concat(e.first_name,' ',e.last_name) AS name FROM employee AS e JOIN role ON e.role_id = role.id WHERE role.title LIKE '%Manager%';`
+}
+
+async function addEmployee(roles, roleIds, managers, managerIds) {
     const data = await inquirer.prompt([
         {
             type: 'input',
@@ -27,19 +31,26 @@ async function addEmployee() {
             name: 'last_name'
         },
         {
-            type: 'number',
-            message: "Enter the employee's role ID.",
+            type: 'list',
+            message: "Select the employee's role.",
+            choices: roles,
             name: 'role_id'
         },
         {
-            type: 'number',
-            message: "Enter the employee's manager ID (0 for null).",
+            type: 'list',
+            message: "Select the employee's manager.",
+            choices: [...managers, 'None'],
             name: 'manager_id'
         }
     ]);
-    if (data.manager_id === 0) {
+    if (data.manager_id === 'None') {
         data.manager_id = null;
-    };
+    } else {
+        const managerInd = managers.findIndex(m => m === data.manager_id);
+        data.manager_id = managerIds[managerInd];
+    }
+    const roleIndex = roles.findIndex(e => e === data.role_id);
+    data.role_id = roleIds[roleIndex];
     const { first_name, last_name, role_id, manager_id } = data;
     const q = {
         query: `INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?);`,
@@ -48,7 +59,7 @@ async function addEmployee() {
     return q;
 };
 
-async function addRole() {
+async function addRole(departments, ids) {
     const data = await inquirer.prompt([
         {
             type: 'input',
@@ -61,11 +72,14 @@ async function addRole() {
             name: 'salary'
         },
         {
-            type: 'number',
-            message: 'Enter the department ID for the new role.',
+            type: 'list',
+            message: 'Select the department for the new role.',
+            choices: departments,
             name: 'department_id'
         }
     ]);
+    const departmentIndex = departments.findIndex(e => e === data.department_id);
+    data.department_id = ids[departmentIndex];
     const {title, salary, department_id} = data;
     const q = {
         query: `INSERT INTO role(title, salary, department_id) VALUES (?, ?, ?);`,
@@ -89,14 +103,17 @@ async function addDepartment() {
     return q;
 };
 
-async function updateEmployee(employee) {
+async function updateEmployee(employee, roles, roleIds) {
     const data = await inquirer.prompt([
         {
-            type: 'input',
-            message: `Enter the new role ID for ${employee}.`,
+            type: 'list',
+            message: `Select the new role ID for ${employee}.`,
+            choices: roles,
             name: 'role_id'
         }
     ]);
+    const roleIndex = roles.findIndex(e => e === data.role_id);
+    data.role_id = roleIds[roleIndex];
     const q = {
         query: `UPDATE employee SET role_id = ? WHERE first_name = ? AND last_name = ?;`,
         data: data.role_id
@@ -111,5 +128,6 @@ module.exports = {
     addEmployee,
     addRole,
     addDepartment,
-    updateEmployee
+    updateEmployee,
+    getManagersQuery
 };

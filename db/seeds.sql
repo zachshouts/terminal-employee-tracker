@@ -9,13 +9,13 @@ VALUES
 
 INSERT INTO role(title, salary, department_id)
 VALUES
-    ('Manager', 80000, 1),
+    ('Paint Manager', 80000, 1),
     ('Mixer', 40000, 1),
-    ('Manager', 100000, 2),
+    ('Hardware Manager', 100000, 2),
     ('Builder', 55000, 2),
-    ('Manager', 70000, 3),
+    ('Grocery Manager', 70000, 3),
     ('Stocker', 30000, 3),
-    ('Manager', 60000, 4),
+    ('Flooring Manager', 60000, 4),
     ('Installer', 55000, 4);
 
 INSERT INTO employee(first_name, last_name, role_id, manager_id)
